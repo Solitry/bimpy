@@ -347,6 +347,8 @@ void  AddTriangleFilled(const ImVec2& a, const ImVec2& b, const ImVec2& c, ImU32
 void  AddCircle(const ImVec2& centre, float radius, ImU32 col, int num_segments, float thickness){ ImGui::GetWindowDrawList()->AddCircle(centre, radius, col, num_segments, thickness); }
 void  AddCircleFilled(const ImVec2& centre, float radius, ImU32 col, int num_segments){ ImGui::GetWindowDrawList()->AddCircleFilled(centre, radius, col, num_segments); }
 void  AddBezierCurve(const ImVec2& pos0, const ImVec2& cp0, const ImVec2& cp1, const ImVec2& pos1, ImU32 col, float thickness, int num_segments){ ImGui::GetWindowDrawList()->AddBezierCurve(pos0, cp0, cp1, pos1, col, thickness, num_segments); }
+void  AddConvexPolyFilled(const ImVec2* points, int num_points, ImU32 col){ ImGui::GetWindowDrawList()->AddConvexPolyFilled(points, num_points, col); }
+void  AddTextSimple(const ImVec2& pos, ImU32 col, const char *text){ ImGui::GetWindowDrawList()->AddText(pos, col, text); }
 
 void  PathClear(){ ImGui::GetWindowDrawList()->PathClear(); }
 void  PathLineTo(const ImVec2& pos){ ImGui::GetWindowDrawList()->PathLineTo(pos); }
@@ -374,10 +376,9 @@ PYBIND11_MODULE(_bimpy, m) {
 		.value("NoScrollWithMouse", ImGuiWindowFlags_::ImGuiWindowFlags_NoScrollWithMouse)
 		.value("NoCollapse", ImGuiWindowFlags_::ImGuiWindowFlags_NoCollapse)
 		.value("AlwaysAutoResize", ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysAutoResize)
-		// obsolete --> Set style.FrameBorderSize=1.0f / style.WindowBorderSize=1.0f to enable borders around windows and items
-		// .value("ShowBorders", ImGuiWindowFlags_::ImGuiWindowFlags_ShowBorders)
+		.value("NoBackground", ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground)
 		.value("NoSavedSettings", ImGuiWindowFlags_::ImGuiWindowFlags_NoSavedSettings)
-		.value("NoInputs", ImGuiWindowFlags_::ImGuiWindowFlags_NoInputs)
+		.value("NoMouseInputs", ImGuiWindowFlags_::ImGuiWindowFlags_NoMouseInputs)
 		.value("MenuBar", ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar)
 		.value("HorizontalScrollbar", ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar)
 		.value("NoFocusOnAppearing", ImGuiWindowFlags_::ImGuiWindowFlags_NoFocusOnAppearing)
@@ -385,6 +386,28 @@ PYBIND11_MODULE(_bimpy, m) {
 		.value("AlwaysVerticalScrollbar", ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysVerticalScrollbar)
 		.value("AlwaysHorizontalScrollbar", ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysHorizontalScrollbar)
 		.value("AlwaysUseWindowPadding", ImGuiWindowFlags_::ImGuiWindowFlags_AlwaysUseWindowPadding)
+		.value("NoNavInputs", ImGuiWindowFlags_::ImGuiWindowFlags_NoNavInputs)
+		.value("NoNavFocus", ImGuiWindowFlags_::ImGuiWindowFlags_NoNavFocus)
+		.value("UnsavedDocument", ImGuiWindowFlags_::ImGuiWindowFlags_UnsavedDocument)
+		.value("NoNav", ImGuiWindowFlags_::ImGuiWindowFlags_NoNav)
+		.value("NoDecoration", ImGuiWindowFlags_::ImGuiWindowFlags_NoDecoration)
+		.value("NoInputs", ImGuiWindowFlags_::ImGuiWindowFlags_NoInputs)
+		.export_values();
+	
+	py::enum_<ImGuiTreeNodeFlags_>(m, "TreeNodeFlags", py::arithmetic())
+		.value("Selected", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_Selected)
+		.value("Framed", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_Framed)
+		.value("AllowItemOverlap", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_AllowItemOverlap)
+		.value("NoTreePushOnOpen", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_NoTreePushOnOpen)
+		.value("NoAutoOpenOnLog", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_NoAutoOpenOnLog)
+		.value("DefaultOpen", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen)
+		.value("OpenOnDoubleClick", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_OpenOnDoubleClick)
+		.value("OpenOnArrow", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_OpenOnArrow)
+		.value("Leaf", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_Leaf)
+		.value("Bullet", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_Bullet)
+		.value("FramePadding", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_FramePadding)
+		.value("NavLeftJumpsBackHere", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_NavLeftJumpsBackHere)
+		.value("CollapsingHeader", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_CollapsingHeader)
 		.export_values();
 
 	py::enum_<ImGuiInputTextFlags_>(m, "InputTextFlags", py::arithmetic())
@@ -454,9 +477,9 @@ PYBIND11_MODULE(_bimpy, m) {
 		.value("ModalWindowDimBg", ImGuiCol_::ImGuiCol_ModalWindowDimBg)
 		// Obsolete names (will be removed)
 		.value("ChildWindowBg", ImGuiCol_::ImGuiCol_ChildWindowBg)
-		.value("Column", ImGuiCol_::ImGuiCol_Column)
-		.value("ColumnHovered", ImGuiCol_::ImGuiCol_ColumnHovered)
-		.value("ColumnActive", ImGuiCol_::ImGuiCol_ColumnActive)
+		// .value("Column", ImGuiCol_::ImGuiCol_Column)
+		// .value("ColumnHovered", ImGuiCol_::ImGuiCol_ColumnHovered)
+		// .value("ColumnActive", ImGuiCol_::ImGuiCol_ColumnActive)
 		.value("ModalWindowDarkening", ImGuiCol_::ImGuiCol_ModalWindowDarkening)
 		// [unused since 1.60+] the close button now uses regular button colors.
 		//.value("CloseButton", ImGuiCol_::ImGuiCol_CloseButton)
@@ -777,6 +800,7 @@ PYBIND11_MODULE(_bimpy, m) {
 	m.def("set_next_window_content_width", &ImGui::SetNextWindowContentWidth, py::arg("width"));
 	m.def("set_next_window_collapsed", &ImGui::SetNextWindowCollapsed, py::arg("collapsed"), py::arg("cond") = 0);
 	m.def("set_next_window_focus", &ImGui::SetNextWindowFocus);
+	m.def("set_next_window_bg_alpha", &ImGui::SetNextWindowBgAlpha, py::arg("alpha"));
 	m.def("set_window_pos", [](const char* name, const ImVec2& pos, ImGuiCond cond){ ImGui::SetWindowPos(name, pos, cond); }, py::arg("name"), py::arg("pos"), py::arg("cond") = 0);
 	m.def("set_window_size", [](const char* name, const ImVec2& size, ImGuiCond cond){ ImGui::SetWindowSize(name, size, cond); }, py::arg("name"), py::arg("size"), py::arg("cond") = 0);
 	m.def("set_window_collapsed", [](const char* name, bool collapsed, ImGuiCond cond){ ImGui::SetWindowCollapsed(name, collapsed, cond); }, py::arg("name"), py::arg("collapsed"), py::arg("cond") = 0);
@@ -786,10 +810,31 @@ PYBIND11_MODULE(_bimpy, m) {
 	m.def("get_scroll_y", &ImGui::GetScrollY);
 	m.def("get_scroll_max_x", &ImGui::GetScrollMaxX);
 	m.def("get_scroll_max_y", &ImGui::GetScrollMaxY);
-	m.def("set_scroll_x", &ImGui::SetScrollX);
-	m.def("set_scroll_y", &ImGui::SetScrollY);
+	// m.def("set_scroll_x", &ImGui::SetScrollX);
+	m.def("set_scroll_x", [](ImGuiWindow* window, float scroll_x) {
+		if (window != nullptr)
+			return ImGui::SetScrollX(window, scroll_x);
+		else
+			return ImGui::SetScrollX(scroll_x);
+	}, py::arg("scroll_x"), py::arg("window") = nullptr);
+	// m.def("set_scroll_y", &ImGui::SetScrollY);
+	m.def("set_scroll_y", [](ImGuiWindow* window, float scroll_y) {
+		if (window != nullptr)
+			return ImGui::SetScrollY(window, scroll_y);
+		else
+			return ImGui::SetScrollY(scroll_y);
+	}, py::arg("scroll_y"), py::arg("window") = nullptr);
+
 	m.def("set_scroll_here", &ImGui::SetScrollHere, py::arg("center_y_ratio") = 0.5f);
-	m.def("set_scroll_from_pos_y", &ImGui::SetScrollFromPosY, py::arg("pos_y"), py::arg("center_y_ratio") = 0.5f);
+
+	// m.def("set_scroll_from_pos_y", &ImGui::SetScrollFromPosY, py::arg("local_y"), py::arg("center_y_ratio") = 0.5f);
+	m.def("set_scroll_from_pos_y", [](ImGuiWindow* window, float local_y, float center_y_ratio) {
+		if (window != nullptr)
+			return ImGui::SetScrollFromPosY(window, local_y, center_y_ratio);
+		else
+			return ImGui::SetScrollFromPosY(local_y, center_y_ratio);
+	}, py::arg("local_y"), py::arg("center_y_ratio") = 0.5f, py::arg("window") = nullptr);
+
 	m.def("set_keyboard_focus_here", &ImGui::SetKeyboardFocusHere, py::arg("offset") = 0.0f);
 
 	m.def("push_style_color", [](ImGuiCol_ idx, const ImVec4& col){ ImGui::PushStyleColor((ImGuiCol)idx, col); });
@@ -1231,7 +1276,7 @@ PYBIND11_MODULE(_bimpy, m) {
 	m.def("set_item_default_focus", &ImGui::SetItemDefaultFocus);
 	m.def("set_keyboard_focus_here", &ImGui::SetKeyboardFocusHere);
 
-	m.def("is_item_hovered", &ImGui::IsItemHovered);
+	m.def("is_item_hovered", &ImGui::IsItemHovered, py::arg("flags") = 0);
 	m.def("is_item_active", &ImGui::IsItemActive);
 	m.def("is_item_focused", &ImGui::IsItemFocused);
 	m.def("is_item_clicked", &ImGui::IsItemClicked);
@@ -1269,6 +1314,8 @@ PYBIND11_MODULE(_bimpy, m) {
 	m.def("get_mouse_pos_on_opening_current_popup", &ImGui::GetMousePosOnOpeningCurrentPopup);
 	m.def("get_mouse_drag_delta", &ImGui::GetMouseDragDelta);
 	m.def("reset_mouse_drag_delta", &ImGui::ResetMouseDragDelta);
+
+	m.def("get_mouse_wheel_delta", [](){ return ImGui::GetIO().MouseWheel; });
 
 	m.def("capture_keyboard_from_app", &ImGui::CaptureKeyboardFromApp);
 	m.def("capture_mouse_from_app", &ImGui::CaptureMouseFromApp);
@@ -1331,6 +1378,12 @@ PYBIND11_MODULE(_bimpy, m) {
 	m.def("add_circle", &AddCircle, py::arg("centre"), py::arg("radius"), py::arg("col"), py::arg("num_segments") = 12, py::arg("thickness") = 1.0f);
 	m.def("add_circle_filled", &AddCircleFilled, py::arg("centre"), py::arg("radius"), py::arg("col"), py::arg("num_segments") = 12);
 	m.def("add_bezier_curve", &AddBezierCurve, py::arg("pos0"), py::arg("cp0"), py::arg("cp1"), py::arg("pos1"), py::arg("col"), py::arg("thickness"), py::arg("num_segments") = 0);
+	m.def("add_text_simple", [](const ImVec2& pos, ImU32 col, const std::string& text){
+		AddTextSimple(pos, col, text.c_str());
+	}, py::arg("pos"), py::arg("col"), py::arg("text"));
+
+	// m.def("add_convex_poly_filled", &AddConvexPolyFilled, py::arg("points"), py::arg("num_points"), py::arg("col"));
+	m.def("add_convex_poly_filled", [](const std::vector<ImVec2>& points, ImU32 col){ AddConvexPolyFilled(&points[0], points.size(), col); });
 
 	m.def("path_clear", &PathClear);
 	m.def("path_line_to", &PathLineTo, py::arg("pos"));
@@ -1353,6 +1406,8 @@ PYBIND11_MODULE(_bimpy, m) {
 	py::class_<ImFont>(m, "Font")
 		.def(py::init())
 	;
+
+	m.def("get_display_size", [](){ return ImGui::GetIO().DisplaySize; });
 
 	m.def("set_display_framebuffer_scale",[](float scale){
 		ImGui::GetIO().DisplayFramebufferScale = ImVec2(scale,scale);
