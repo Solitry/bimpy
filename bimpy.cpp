@@ -394,6 +394,21 @@ PYBIND11_MODULE(_bimpy, m) {
 		.value("NoInputs", ImGuiWindowFlags_::ImGuiWindowFlags_NoInputs)
 		.export_values();
 	
+	py::enum_<ImGuiTabBarFlags_>(m, "TabBarFlags", py::arithmetic())
+		.value("None", ImGuiTabBarFlags_::ImGuiTabBarFlags_None)
+		.value("Reorderable", ImGuiTabBarFlags_::ImGuiTabBarFlags_Reorderable)
+		.value("AutoSelectNewTabs", ImGuiTabBarFlags_::ImGuiTabBarFlags_AutoSelectNewTabs)
+		.value("TabListPopupButton", ImGuiTabBarFlags_::ImGuiTabBarFlags_TabListPopupButton)
+		.value("NoCloseWithMiddleMouseButton", ImGuiTabBarFlags_::ImGuiTabBarFlags_NoCloseWithMiddleMouseButton)
+		.value("NoTabListScrollingButtons", ImGuiTabBarFlags_::ImGuiTabBarFlags_NoTabListScrollingButtons)
+		.value("NoTooltip", ImGuiTabBarFlags_::ImGuiTabBarFlags_NoTooltip)
+		.value("FittingPolicyResizeDown", ImGuiTabBarFlags_::ImGuiTabBarFlags_FittingPolicyResizeDown)
+		.value("FittingPolicyScroll", ImGuiTabBarFlags_::ImGuiTabBarFlags_FittingPolicyScroll)
+		.value("FittingPolicyMask_", ImGuiTabBarFlags_::ImGuiTabBarFlags_FittingPolicyMask_)
+		.value("FittingPolicyDefault_", ImGuiTabBarFlags_::ImGuiTabBarFlags_FittingPolicyDefault_)
+		.export_values();
+	
+	
 	py::enum_<ImGuiTreeNodeFlags_>(m, "TreeNodeFlags", py::arithmetic())
 		.value("Selected", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_Selected)
 		.value("Framed", ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_Framed)
@@ -886,6 +901,22 @@ PYBIND11_MODULE(_bimpy, m) {
 	m.def("get_column_width", &ImGui::GetColumnWidth, py::arg("column_index") = -1);
     m.def("set_column_width", &ImGui::SetColumnWidth, py::arg("column_index"), py::arg("column_width"));
 	m.def("get_columns_count", &ImGui::GetColumnsCount);
+
+	m.def("begin_tab_bar",[](const std::string& str_id, ImGuiWindowFlags flags) -> bool
+		{
+			return ImGui::BeginTabBar(str_id.c_str(), flags);
+		},
+		"Push a new ImGui tab bar",
+		py::arg("str_id"), py::arg("flags") = ImGuiWindowFlags_(0));
+	m.def("end_tab_bar", &ImGui::EndTabBar);
+	m.def("begin_tab_item",[](const std::string& label, Bool& opened, ImGuiWindowFlags flags) -> bool
+		{
+			return ImGui::BeginTabItem(label.c_str(), opened.null ? nullptr : &opened.value, flags);
+		},
+		"Add a tab item",
+		py::arg("label"), py::arg("opened") = null, py::arg("flags") = ImGuiWindowFlags_(0));
+	m.def("end_tab_item", &ImGui::EndTabItem);
+	m.def("set_tab_item_closed", [](const char* tab_or_docked_window_label){ return ImGui::SetTabItemClosed(tab_or_docked_window_label); });
 
 	m.def("push_id_str", [](const char* str_id_begin, const char* str_id_end){ ImGui::PushID(str_id_begin, str_id_end); }, py::arg("str_id_begin"), py::arg("str_id_end") = nullptr);
 	m.def("push_id_int", [](int int_id){ ImGui::PushID(int_id); } );
