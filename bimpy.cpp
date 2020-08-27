@@ -43,6 +43,8 @@ public:
 
 	int GetHeight() const;
 
+	void SetBackgroundColor(const ImVec4 &color);
+
 	~Context();
 
 private:
@@ -51,6 +53,7 @@ private:
 	int m_height;
 	struct ImGuiContext* m_imgui;
 	std::mutex m_imgui_ctx_mutex;
+	ImVec4 background_color = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
 };
 
 
@@ -87,7 +90,8 @@ void Context::Init(int width, int height, const std::string& name)
 
 		ImGui_ImplGlfw_InitForOpenGL(m_window, false);
 		ImGui_ImplOpenGL3_Init(glsl_version);
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		// glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClearColor(background_color.x, background_color.y, background_color.z, background_color.w);
 
 		m_width = width;
 		m_height = height;
@@ -194,6 +198,11 @@ int Context::GetWidth() const
 int Context::GetHeight() const
 {
 	return m_height;
+}
+
+void Context::SetBackgroundColor(const ImVec4 &color)
+{
+	background_color = color;
 }
 
 struct Bool
@@ -561,7 +570,8 @@ PYBIND11_MODULE(_bimpy, m) {
 		.def("__exit__", [](Context& self, py::object, py::object, py::object)
 			{
 				self.Render();
-			});
+			})
+		.def("set_background_color", &Context::SetBackgroundColor);
 
 	py::enum_<ImDrawCornerFlags_>(m, "Corner")
 		.value("TopLeft", ImDrawCornerFlags_TopLeft)
